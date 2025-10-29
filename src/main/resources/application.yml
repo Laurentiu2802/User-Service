@@ -3,9 +3,9 @@ spring:
     name: user-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/user_service
-    username: user_service_user
-    password: user_pass_123
+    url: jdbc:postgresql://localhost:5432/user_service_db
+    username: autoally
+    password: autoally123
     driver-class-name: org.postgresql.Driver
 
   jpa:
