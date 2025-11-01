@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.business.dto.userDTO.UserRequestDto;
 import org.example.business.dto.userDTO.UserResponseDto;
 import org.example.business.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,5 +38,22 @@ public class UserController {
 
         UserResponseDto response = userService.registerUser(userDto);
         return ResponseEntity.ok(response);
+    }
+    @DeleteMapping("/account")
+    public ResponseEntity<Void> deleteAccount(
+            @RequestHeader(value = "X-User-Id") String userId) {
+
+        log.info("Delete account request from user: {}", userId);
+
+        try {
+            userService.deleteAccount(userId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            log.error("Error deleting account: {}", e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
