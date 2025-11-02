@@ -244,7 +244,7 @@ class UserServiceImplTest {
                 .doesNotThrowAnyException();
 
         verify(userRepository).deleteById(userId);
-        verify(rabbitTemplate).convertAndSend(eq("user.exchange"), eq("user.deleted"), eq(userId));
+        verify(rabbitTemplate).convertAndSend("user.exchange","user.deleted", userId);
     }
 
     static Stream<String> provideValidUserIds() {
