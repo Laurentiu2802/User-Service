@@ -34,6 +34,9 @@ public class UserEntity {
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
+    @Column
+    private String roles;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;

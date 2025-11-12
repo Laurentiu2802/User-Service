@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/users")
@@ -24,6 +26,7 @@ public class UserController {
             @RequestHeader(value = "X-User-FirstName") String firstName,
             @RequestHeader(value = "X-User-LastName") String lastName,
             @RequestHeader(value = "X-User-Username") String username,
+            @RequestHeader(value = "X-User-Roles") String roles,
             @RequestBody(required = false) UserRequestDto additionalInfo) {
 
         log.info("Register request for user: {}", userId);
@@ -34,10 +37,19 @@ public class UserController {
                 .firstName(firstName)
                 .lastName(lastName)
                 .username(username)
+                .roles(roles)
                 .build();
 
         UserResponseDto response = userService.registerUser(userDto);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<UserResponseDto>> getAllUsers(
+            @RequestParam(required = false) String role) {
+        log.info("Fetching all users with role filter: {}", role);
+        List<UserResponseDto> users = userService.getAllUsers(role);
+        return ResponseEntity.ok(users);
     }
     @DeleteMapping("/account")
     public ResponseEntity<Void> deleteAccount(

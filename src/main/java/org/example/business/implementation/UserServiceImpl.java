@@ -11,6 +11,9 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 @AllArgsConstructor
@@ -34,6 +37,7 @@ public class UserServiceImpl implements UserService {
             user.setFirstName(requestDto.getFirstName());
             user.setLastName(requestDto.getLastName());
             user.setUsername(requestDto.getUsername());
+            user.setRoles(requestDto.getRoles());
         } else {
             // New user - create
             log.info("Creating new user");
@@ -43,6 +47,7 @@ public class UserServiceImpl implements UserService {
                     .firstName(requestDto.getFirstName())
                     .lastName(requestDto.getLastName())
                     .username(requestDto.getUsername())
+                    .roles(requestDto.getRoles())
                     .build();
         }
 
@@ -56,6 +61,7 @@ public class UserServiceImpl implements UserService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .createdAt(user.getCreatedAt())
+                .roles(user.getRoles())
                 .build();
     }
     @Override
@@ -78,5 +84,29 @@ public class UserServiceImpl implements UserService {
             log.error("Failed to publish user.deleted event: {}", e.getMessage());
             throw new RuntimeException("Failed to publish deletion event");
         }
+    }
+
+    @Override
+    public List<UserResponseDto> getAllUsers(String roleFilter) {
+        log.info("Getting all users with role filter: {}", roleFilter);
+        List<UserEntity> users = userRepository.findAll();
+
+        return users.stream()
+                .filter(user -> {
+                    if (roleFilter == null || roleFilter.isEmpty()) {
+                        return true;
+                    }
+                    return user.getRoles() != null && user.getRoles().contains(roleFilter);
+                })
+                .map(user -> UserResponseDto.builder()
+                        .id(user.getId())
+                        .email(user.getEmail())
+                        .username(user.getUsername())
+                        .firstName(user.getFirstName())
+                        .lastName(user.getLastName())
+                        .roles(user.getRoles())
+                        .createdAt(user.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
     }
 }
