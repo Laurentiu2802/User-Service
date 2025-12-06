@@ -57,4 +57,4 @@ keycloak:
   url: http://localhost:8080
   realm: AutoAlly
   client-id: autoally-admin
-  client-secret: 0ET5YVMMV6AcZnuMwNhc0ACi4diwmg6Z
+  client-secret: FjO6C9NXlYwFIoC7BbRfQ6Bd1iav4Ffy
