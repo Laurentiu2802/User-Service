@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.business.dto.userDTO.UserRequestDto;
@@ -7,6 +8,7 @@ import org.example.business.dto.userDTO.UserResponseDto;
 import org.example.business.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/users")
 @AllArgsConstructor
+@Validated  // <-- ADDED
 public class UserController {
 
     private final UserService userService;
@@ -46,11 +49,14 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<List<UserResponseDto>> getAllUsers(
-            @RequestParam(required = false) String role) {
+            @RequestParam(required = false)
+            @Pattern(regexp = "^(CAR_ENTHUSIAST|MECHANIC)?$", message = "Role must be CAR_ENTHUSIAST or MECHANIC")  // <-- ADDED
+            String role) {
         log.info("Fetching all users with role filter: {}", role);
         List<UserResponseDto> users = userService.getAllUsers(role);
         return ResponseEntity.ok(users);
     }
+
     @DeleteMapping("/account")
     public ResponseEntity<Void> deleteAccount(
             @RequestHeader(value = "X-User-Id") String userId) {
