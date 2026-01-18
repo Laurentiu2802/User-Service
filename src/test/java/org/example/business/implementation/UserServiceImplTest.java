@@ -20,6 +20,9 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.stream.Stream;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -85,6 +88,301 @@ class UserServiceImplTest {
         verify(userRepository, times(1)).save(any(UserEntity.class));
     }
 
+    @Test
+    @DisplayName("Happy Flow: Should return all users when no role filter provided")
+    void getAllUsers_WithNoFilter_ShouldReturnAllUsers() {
+        // Arrange
+        UserEntity user1 = UserEntity.builder()
+                .id("user1")
+                .email("user1@test.com")
+                .username("user1")
+                .firstName("John")
+                .lastName("Doe")
+                .roles("CAR_ENTHUSIAST")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserEntity user2 = UserEntity.builder()
+                .id("user2")
+                .email("user2@test.com")
+                .username("user2")
+                .firstName("Jane")
+                .lastName("Smith")
+                .roles("MECHANIC")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userRepository.findAll()).thenReturn(Arrays.asList(user1, user2));
+
+        // Act
+        List<UserResponseDto> result = userService.getAllUsers(null);
+
+        // Assert
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getId()).isEqualTo("user1");
+        assertThat(result.get(1).getId()).isEqualTo("user2");
+        verify(userRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Happy Flow: Should return all users when empty role filter provided")
+    void getAllUsers_WithEmptyFilter_ShouldReturnAllUsers() {
+        // Arrange
+        UserEntity user = UserEntity.builder()
+                .id("user1")
+                .email("user1@test.com")
+                .username("user1")
+                .firstName("John")
+                .lastName("Doe")
+                .roles("CAR_ENTHUSIAST")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(user));
+
+        // Act
+        List<UserResponseDto> result = userService.getAllUsers("");
+
+        // Assert
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo("user1");
+    }
+
+    @Test
+    @DisplayName("Happy Flow: Should filter users by role")
+    void getAllUsers_WithRoleFilter_ShouldReturnFilteredUsers() {
+        // Arrange
+        UserEntity mechanic = UserEntity.builder()
+                .id("mechanic1")
+                .email("mechanic@test.com")
+                .username("mechanic")
+                .firstName("Mike")
+                .lastName("Mechanic")
+                .roles("MECHANIC")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserEntity enthusiast = UserEntity.builder()
+                .id("enthusiast1")
+                .email("enthusiast@test.com")
+                .username("enthusiast")
+                .firstName("John")
+                .lastName("Car")
+                .roles("CAR_ENTHUSIAST")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userRepository.findAll()).thenReturn(Arrays.asList(mechanic, enthusiast));
+
+        // Act
+        List<UserResponseDto> result = userService.getAllUsers("MECHANIC");
+
+        // Assert
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo("mechanic1");
+        assertThat(result.get(0).getRoles()).contains("MECHANIC");
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideRoleFilters")
+    @DisplayName("Happy Flow: Should filter users by various roles")
+    void getAllUsers_WithVariousRoleFilters_ShouldReturnCorrectUsers(String roleFilter, int expectedCount) {
+        // Arrange
+        UserEntity mechanic = UserEntity.builder()
+                .id("mechanic1")
+                .email("m@test.com")
+                .username("mechanic")
+                .firstName("Mike")
+                .lastName("M")
+                .roles("MECHANIC")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserEntity enthusiast = UserEntity.builder()
+                .id("enthusiast1")
+                .email("e@test.com")
+                .username("enthusiast")
+                .firstName("John")
+                .lastName("E")
+                .roles("CAR_ENTHUSIAST")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserEntity both = UserEntity.builder()
+                .id("both1")
+                .email("b@test.com")
+                .username("both")
+                .firstName("Both")
+                .lastName("B")
+                .roles("MECHANIC,CAR_ENTHUSIAST")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userRepository.findAll()).thenReturn(Arrays.asList(mechanic, enthusiast, both));
+
+        // Act
+        List<UserResponseDto> result = userService.getAllUsers(roleFilter);
+
+        // Assert
+        assertThat(result).hasSize(expectedCount);
+    }
+
+    static Stream<Arguments> provideRoleFilters() {
+        return Stream.of(
+                Arguments.of("MECHANIC", 2),
+                Arguments.of("CAR_ENTHUSIAST", 2),
+                Arguments.of("ADMIN", 0),
+                Arguments.of(null, 3),
+                Arguments.of("", 3)
+        );
+    }
+
+    @Test
+    @DisplayName("Happy Flow: Should map all user fields correctly")
+    void getAllUsers_ShouldMapAllFieldsCorrectly() {
+        // Arrange
+        LocalDateTime now = LocalDateTime.now();
+        UserEntity user = UserEntity.builder()
+                .id("user123")
+                .email("test@example.com")
+                .username("testuser")
+                .firstName("John")
+                .lastName("Doe")
+                .roles("CAR_ENTHUSIAST")
+                .createdAt(now)
+                .build();
+
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(user));
+
+        // Act
+        List<UserResponseDto> result = userService.getAllUsers(null);
+
+        // Assert
+        assertThat(result).hasSize(1);
+        UserResponseDto dto = result.get(0);
+        assertThat(dto.getId()).isEqualTo("user123");
+        assertThat(dto.getEmail()).isEqualTo("test@example.com");
+        assertThat(dto.getUsername()).isEqualTo("testuser");
+        assertThat(dto.getFirstName()).isEqualTo("John");
+        assertThat(dto.getLastName()).isEqualTo("Doe");
+        assertThat(dto.getRoles()).isEqualTo("CAR_ENTHUSIAST");
+        assertThat(dto.getCreatedAt()).isEqualTo(now);
+    }
+
+// ==================== UNHAPPY FLOW - GET ALL USERS ====================
+
+    @Test
+    @DisplayName("Unhappy Flow: Should handle repository exception when getting all users")
+    void getAllUsers_WhenRepositoryThrowsException_ShouldPropagateException() {
+        // Arrange
+        when(userRepository.findAll())
+                .thenThrow(new RuntimeException("Database connection failed"));
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.getAllUsers(null))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Database connection failed");
+    }
+
+// ==================== EDGE CASES - GET ALL USERS ====================
+
+    @Test
+    @DisplayName("Edge Case: Should return empty list when no users exist")
+    void getAllUsers_WhenNoUsers_ShouldReturnEmptyList() {
+        // Arrange
+        when(userRepository.findAll()).thenReturn(Collections.emptyList());
+
+        // Act
+        List<UserResponseDto> result = userService.getAllUsers(null);
+
+        // Assert
+        assertThat(result).isEmpty();
+        verify(userRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Edge Case: Should return empty list when filter matches no users")
+    void getAllUsers_WhenFilterMatchesNoOne_ShouldReturnEmptyList() {
+        // Arrange
+        UserEntity user = UserEntity.builder()
+                .id("user1")
+                .email("test@test.com")
+                .username("test")
+                .firstName("Test")
+                .lastName("User")
+                .roles("MECHANIC")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(user));
+
+        // Act
+        List<UserResponseDto> result = userService.getAllUsers("ADMIN");
+
+        // Assert
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Edge Case: Should handle users with null roles")
+    void getAllUsers_WithUsersHavingNullRoles_ShouldFilterCorrectly() {
+        // Arrange
+        UserEntity userWithRole = UserEntity.builder()
+                .id("user1")
+                .email("user1@test.com")
+                .username("user1")
+                .firstName("John")
+                .lastName("Doe")
+                .roles("MECHANIC")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserEntity userWithoutRole = UserEntity.builder()
+                .id("user2")
+                .email("user2@test.com")
+                .username("user2")
+                .firstName("Jane")
+                .lastName("Smith")
+                .roles(null)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userRepository.findAll()).thenReturn(Arrays.asList(userWithRole, userWithoutRole));
+
+        // Act
+        List<UserResponseDto> resultAll = userService.getAllUsers(null);
+        List<UserResponseDto> resultFiltered = userService.getAllUsers("MECHANIC");
+
+        // Assert
+        assertThat(resultAll).hasSize(2);
+        assertThat(resultFiltered).hasSize(1);
+        assertThat(resultFiltered.get(0).getId()).isEqualTo("user1");
+    }
+
+    @Test
+    @DisplayName("Edge Case: Should handle case-sensitive role filtering")
+    void getAllUsers_WithCaseSensitiveRoles_ShouldFilterExactly() {
+        // Arrange
+        UserEntity user = UserEntity.builder()
+                .id("user1")
+                .email("test@test.com")
+                .username("test")
+                .firstName("Test")
+                .lastName("User")
+                .roles("MECHANIC")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(user));
+
+        // Act
+        List<UserResponseDto> resultUppercase = userService.getAllUsers("MECHANIC");
+        List<UserResponseDto> resultLowercase = userService.getAllUsers("mechanic");
+
+        // Assert
+        assertThat(resultUppercase).hasSize(1);
+        assertThat(resultLowercase).isEmpty();
+    }
     @Test
     @DisplayName("Happy Flow: Should update existing user when user already exists")
     void registerUser_WhenExistingUser_ShouldUpdateSuccessfully() {

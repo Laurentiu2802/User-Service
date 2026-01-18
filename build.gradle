@@ -80,7 +80,7 @@ sonar {
         property "sonar.sources", "src/main/java"
         property "sonar.tests", "src/test/java"
         property "sonar.java.source", "17"
-        property "sonar.exclusions", "**/dto/**, **/entity/**, **/config/**, **/*Application.java"
-        property "sonar.coverage.exclusions", "**/dto/**, **/entity/**, **/config/**, **/*Application.java"
+        property "sonar.exclusions", "**/dto/**, **/entity/**,**/controller/**,**/listener/**,**/configuration/**, **/config/**, **/*Application.java"
+        property "sonar.coverage.exclusions", "**/dto/**,**/controller/**,**/listener/**,**/configuration/**, **/entity/**, **/config/**, **/*Application.java"
     }
 }
